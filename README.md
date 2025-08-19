@@ -1,59 +1,28 @@
 # Poseidon2 BLS12-381 EVM
 
-## 🎯 Project Overview
+A production-ready Solidity implementation of the Poseidon2 hash function for the BLS12-381 scalar field, providing efficient on-chain hashing capabilities.
 
-This project provides a **production-ready** Solidity implementation of the Poseidon2 hash function for the BLS12-381 scalar field, with **100% compatibility** with the npm package `poseidon-bls12381`.
+## Features
 
-## ✅ Verification Results
+### Core Hash Functions
+- **`poseidon2(x, y)`** - Hash two field elements using Poseidon2
+- **`poseidon2Uint256(x, y)`** - Hash two uint256 values (convenience function)
+- **`hash_1(x)`** - Hash a single field element
+- **`hash_2(x, y)`** - Hash two field elements
+- **`hash(inputs[])`** - Hash an array of field elements with sponge construction
 
-### Perfect Compatibility Achieved
-- **✅ All test vectors match** between npm library and Solidity implementation
-- **✅ 14/14 comprehensive tests passed** (100% success rate)
-- **✅ Field boundary cases** handled correctly
-- **✅ Random input testing** passed
+### Advanced Functions
+- **`permutation(state)`** - Apply Poseidon2 permutation to 3-element state
+- **`convertToFieldArray(uint256[])`** - Convert uint256 array to field elements
+- **`hashUint256(uint256[])`** - Hash uint256 array directly
 
-## 🔧 Technical Specifications
+### Built-in Testing
+- **`testVector1()`** - Pre-computed hash for inputs [1, 2]
+- **`testVector2()`** - Pre-computed hash for inputs [0, 0]
 
-### Implementation Details
-- **Field**: BLS12-381 scalar field
-- **Prime**: `0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001`
-- **Parameters**: 
-  - `rFull = 8` (full rounds)
-  - `rPartial = 56` (partial rounds)  
-  - `t = 3` (state size)
-- **Round Constants**: 192 values (exactly matching npm library)
-- **MDS Matrix**: 3×3 matrix (exactly matching npm library)
-- **S-box**: `x^5` with proper modular arithmetic
+## 📋 Usage Examples
 
-### Key Files
-- `contracts/Poseidon2.sol` - Main contract interface
-- `contracts/Poseidon2Lib.sol` - Core implementation library
-- `contracts/Field.sol` - BLS12-381 field arithmetic
-- `test/compareImplementations.js` - Comprehensive test suite
-- `scripts/quickTest.js` - Quick verification script
-- `scripts/finalSummary.js` - Implementation summary
-
-## 🚀 Usage
-
-### Installation
-```bash
-npm install poseidon-bls12381  # For off-chain comparison
-npm install  # Install Hardhat dependencies
-```
-
-### Testing
-```bash
-# Quick verification
-npx hardhat run scripts/quickTest.js
-
-# Comprehensive test suite
-npx hardhat test test/compareImplementations.js
-
-# Implementation summary
-npx hardhat run scripts/finalSummary.js
-```
-
-### Contract Usage
+### Basic Hashing
 ```solidity
 import {Poseidon2} from "./contracts/Poseidon2.sol";
 
@@ -64,97 +33,77 @@ contract MyContract {
         poseidon = new Poseidon2();
     }
     
-    function hashValues(uint256 x, uint256 y) public view returns (uint256) {
+    function hashTwoValues(uint256 x, uint256 y) public view returns (uint256) {
         return poseidon.poseidon2Uint256(x, y);
+    }
+    
+    function hashArray(uint256[] memory inputs) public view returns (uint256) {
+        return poseidon.hashUint256(inputs);
     }
 }
 ```
 
-### JavaScript Comparison
-```javascript
-const { poseidon2 } = require("poseidon-bls12381");
+### Field Element Hashing
+```solidity
+function hashFieldElements(Field.Type x, Field.Type y) public view returns (Field.Type) {
+    return poseidon.poseidon2(x, y);
+}
 
-// Off-chain calculation
-const result = poseidon2([1n, 2n]);
-console.log("Off-chain:", result.toString());
-
-// On-chain calculation (matches perfectly)
-const onChainResult = await contract.poseidon2Uint256(1, 2);
-console.log("On-chain:", onChainResult.toString());
+function singleHash(Field.Type x) public view returns (Field.Type) {
+    return poseidon.hash_1(x);
+}
 ```
 
-## 📊 Performance Metrics
-
-### Gas Usage
-- **Deployment**: ~3.2M gas
-- **Per call**: ~480K gas
-- **Optimized**: Uses efficient field arithmetic
-
-### Speed Comparison
-- **Off-chain**: ~0.14ms per call
-- **On-chain**: ~9.6ms per call (estimated at 20 gwei)
-
-## 🔍 Test Vectors
-
-Verified test vectors for cross-implementation checking:
-
-```
-poseidon2([0, 0]) = 51576823595707970152643159819788304363803754756066229172775779360774743019614
-poseidon2([1, 2]) = 28821147804331559602169231704816259064962739503761913593647409715501647586810
-poseidon2([123, 456]) = 8079747701770448096169933690831733268548278059333184723693943595493728456866
-poseidon2([123456789, 987654321]) = 7259761822356338919011747483582999411414453055692031385862656213622249484940
+### Sponge Construction
+```solidity
+function hashVariableLength(uint256[] memory inputs) public view returns (uint256) {
+    return poseidon.hash(inputs, inputs.length, true);
+}
 ```
 
-## 🛠 Available Functions
+## 🔧 Technical Details
 
-### Main Interface (`Poseidon2.sol`)
-- `poseidon2(Field.Type x, Field.Type y) → Field.Type`
-- `poseidon2Uint256(uint256 x, uint256 y) → uint256`
-- `hash_1(Field.Type x) → Field.Type`
-- `hash_2(Field.Type x, Field.Type y) → Field.Type`
-- `hash(Field.Type[] input) → Field.Type`
-- `permutation(Field.Type[3] inputs) → Field.Type[3]`
+- **Field**: BLS12-381 scalar field
+- **State Size**: 3 elements (2 inputs + 1 capacity)
+- **Rounds**: 8 full rounds + 56 partial rounds
+- **S-box**: x^5 with modular arithmetic
+- **Gas Usage**: ~480K gas per hash call
 
-### Test Functions
-- `testVector1() → uint256` - Test with inputs [1, 2]
-- `testVector2() → uint256` - Test with inputs [0, 0]
+## 📦 Installation
 
-## 🔄 Implementation Journey
+```bash
+npm install
+npm install poseidon-bls12381  # For off-chain comparison
+```
 
-### Initial Challenge
-The original TypeScript code provided had S-box bugs (missing modulo operations), which caused mismatches with the npm library.
+## 🧪 Testing
 
-### Resolution
-We discovered that the npm package `poseidon-bls12381` implements the **correct** Poseidon2 specification. We updated our Solidity implementation to match the correct specification rather than the buggy TypeScript code.
+```bash
+# Quick verification
+npx hardhat run scripts/quickTest.js
 
-### Key Fixes Applied
-1. ✅ Fixed S-box implementation to use proper modulo operations
-2. ✅ Added missing `poseidon2Direct` function
-3. ✅ Corrected state initialization pattern
-4. ✅ Fixed function overload conflicts
-5. ✅ Verified all round constants and MDS matrix values
-6. ✅ Comprehensive testing framework created
+# Full test suite
+npx hardhat test test/compareImplementations.js
 
-## 🎉 Final Assessment
+# Implementation summary
+npx hardhat run scripts/finalSummary.js
+```
 
-### Compatibility Status
-- **Implementation compatibility**: ✅ **PERFECT**
-- **Test success rate**: ✅ **100% (14/14 tests passed)**
-- **Production readiness**: ✅ **READY**
+## ✅ Verification
 
-### Quality Assurance
-- ✅ Matches npm library `poseidon-bls12381` exactly
-- ✅ Comprehensive test coverage including edge cases
-- ✅ Gas-optimized implementation
-- ✅ Proper field boundary handling
-- ✅ Random input testing validated
-- ✅ Performance benchmarked
+This implementation has been verified to produce **identical results** to the npm package `poseidon-bls12381`, ensuring correctness and compatibility with established standards.
 
-## 📋 Conclusion
+## 📚 Documentation
 
-This Solidity implementation of Poseidon2 for BLS12-381 is **production-ready** and provides **perfect compatibility** with the established npm library. It can be safely used in blockchain applications requiring Poseidon2 hashing with confidence in its correctness and efficiency.
+- **`IMPLEMENTATION_REPORT.md`** - Detailed technical implementation report
+- **`contracts/`** - Solidity contract source code
+- **`test/`** - Comprehensive test suite
+- **`scripts/`** - Testing and verification scripts
 
----
-**Status**: ✅ **IMPLEMENTATION VERIFICATION SUCCESSFUL**  
-**Compatibility**: 🎉 **PERFECT MATCH WITH NPM LIBRARY**  
-**Readiness**: 🚀 **PRODUCTION READY**
+## 🤝 Contributing
+
+Feel free to submit issues, feature requests, or pull requests to improve this implementation.
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
