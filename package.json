@@ -1,6 +1,13 @@
 {
   "name": "Poseidon2Test",
   "version": "1.0.0",
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "generate:poseidon2": "ts-node yul-generator-poseidon2.ts > contracts/Poseidon2Yul.sol",
+    "generate:poseidon4": "ts-node yul-generator-poseidon4.ts > contracts/Poseidon4Yul.sol",
+    "generate:all": "npm run generate:poseidon2 && npm run generate:poseidon4"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
     "@nomicfoundation/hardhat-ethers": "^3.1.0",
@@ -17,9 +24,12 @@
     "hardhat-gas-reporter": "^2.3.0",
     "poseidon-bls12381": "^1.0.2",
     "solidity-coverage": "^0.8.16",
-    "typechain": "^8.3.2"
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
+    "typescript": "^5.9.2"
   },
   "dependencies": {
+    "dotenv": "^17.2.1",
     "poseidon-bls12381-circom": "^1.0.0"
   }
 }
