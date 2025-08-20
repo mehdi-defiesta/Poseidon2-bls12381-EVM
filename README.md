@@ -95,7 +95,6 @@ This implementation has been verified to produce **identical results** to the np
 
 ## 📚 Documentation
 
-- **`IMPLEMENTATION_REPORT.md`** - Detailed technical implementation report
 - **`contracts/`** - Solidity contract source code
 - **`test/`** - Comprehensive test suite
 - **`scripts/`** - Testing and verification scripts
