@@ -8,7 +8,6 @@ contract Poseidon2 {
     using Field for *;
 
     /**
-     * Main poseidon2 function matching TypeScript implementation
      * Takes 2 inputs and returns first element of permutation
      */
     function poseidon2(Field.Type x, Field.Type y) public pure returns (Field.Type) {
@@ -85,15 +84,13 @@ contract Poseidon2 {
     }
 
     /**
-     * Test vectors for verification (you can add expected outputs from TypeScript)
+     * Test vectors for verification 
      */
     function testVector1() public pure returns (uint256) {
-        // poseidon2(1, 2) - add expected result from TypeScript
         return poseidon2Uint256(1, 2);
     }
 
     function testVector2() public pure returns (uint256) {
-        // poseidon2(0, 0) - add expected result from TypeScript
         return poseidon2Uint256(0, 0);
     }
 }

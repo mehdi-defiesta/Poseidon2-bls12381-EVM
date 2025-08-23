@@ -4,7 +4,6 @@ pragma solidity >=0.8.8;
 
 import {Field} from "./Field.sol";
 
-// Poseidon2 hash function matching the off-chain TypeScript implementation
 // Uses BLS12-381 scalar field and 3-element state (t=3)
 library Poseidon2Lib {
     using Field for *;
@@ -53,12 +52,11 @@ library Poseidon2Lib {
     }
 
     /**
-     * Direct poseidon2 function matching npm library implementation
      * Takes 2 inputs and returns first element of permutation
      */
     function poseidon2Direct(Field.Type[2] memory inputs) internal pure returns (Field.Type) {
         Field.Type[3] memory state;
-        state[0] = Field.Type.wrap(0); // Initialize first element to 0
+        state[0] = Field.Type.wrap(0);   // Initialize first element to 0
         state[1] = inputs[0];          // First input
         state[2] = inputs[1];          // Second input
         
@@ -71,11 +69,10 @@ library Poseidon2Lib {
             constants.mds_matrix
         );
         
-        return result[0]; // Return first element as per TypeScript implementation
+        return result[0];
     }
 
     /**
-     * Core Poseidon permutation matching the npm library implementation
      * This implements the correct Poseidon2 specification with proper modulo operations
      */
     function poseidonPermutation(
@@ -143,7 +140,7 @@ library Poseidon2Lib {
     }
 
     /**
-     * S-box function: x^5 WITHOUT modulo to match TypeScript bug
+     * S-box function: x^5 WITHOUT modulo 
      * Note: This is intentionally incorrect to match the TypeScript implementation
      */
     function sBoxNoModulo(Field.Type x) private pure returns (Field.Type) {
@@ -152,8 +149,6 @@ library Poseidon2Lib {
 
     /**
      * S-box function: x^5 mod p (correct implementation)
-     * Note: The TypeScript implementation is missing % PRIME in some places, 
-     * but this follows the standard specification
      */
     function sBox(Field.Type x) private pure returns (Field.Type) {
         return x.pow(5);
@@ -180,7 +175,7 @@ library Poseidon2Lib {
     }
 
     /**
-     * Generate IV for hash (matching off-chain implementation)
+     * Generate IV for hash
      */
     function generate_iv(uint256 input_length) internal pure returns (Field.Type) {
         return Field.Type.wrap(input_length << 64);

@@ -3,7 +3,6 @@ pragma solidity >=0.8.8;
 
 import {Field} from "./Field.sol";
 
-// Poseidon4 hash function matching the off-chain implementation
 // Uses BLS12-381 scalar field and 5-element state (t=5)
 library Poseidon4Lib {
     using Field for *;
@@ -19,7 +18,6 @@ library Poseidon4Lib {
     }
 
     /**
-     * Direct poseidon4 function matching npm library implementation
      * Takes 4 inputs and returns first element of permutation
      */
     function poseidon4Direct(Field.Type[4] memory inputs) internal pure returns (Field.Type) {
@@ -43,7 +41,7 @@ library Poseidon4Lib {
     }
 
     /**
-     * Core Poseidon permutation matching the npm library implementation
+     * This implements the correct Poseidon2 specification with proper modulo operations
      */
     function poseidonPermutation(
         Field.Type[5] memory inputs,

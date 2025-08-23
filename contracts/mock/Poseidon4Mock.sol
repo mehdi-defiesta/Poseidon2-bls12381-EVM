@@ -153,7 +153,7 @@ contract Poseidon4Mock {
      * @dev Test with edge case values
      * @return results Array of hash results for edge cases
      */
-    function testEdgeCases() external returns (uint256[] memory results) {
+    function testEdgeCases() external view returns (uint256[] memory results) {
         results = new uint256[](5);
         
         // Test case 1: All zeros

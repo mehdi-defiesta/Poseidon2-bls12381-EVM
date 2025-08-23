@@ -6,7 +6,6 @@ import {Poseidon4Lib} from "./Poseidon4Lib.sol";
 
 /**
  * Poseidon4 Contract - 4-input Poseidon hash function
- * Implements the same interface as the off-chain poseidon-bls12381 library
  */
 contract Poseidon4 {
     using Field for *;
@@ -50,17 +49,14 @@ contract Poseidon4 {
      * Test vectors for verification
      */
     function testVector1() public pure returns (uint256) {
-        // poseidon4(1, 2, 3, 4) - will add expected result from JS library
         return poseidon4Uint256(1, 2, 3, 4);
     }
 
     function testVector2() public pure returns (uint256) {
-        // poseidon4(0, 0, 0, 0) - will add expected result from JS library
         return poseidon4Uint256(0, 0, 0, 0);
     }
 
     function testVector3() public pure returns (uint256) {
-        // poseidon4(123, 456, 789, 101112) - will add expected result from JS library
         return poseidon4Uint256(123, 456, 789, 101112);
     }
 }
