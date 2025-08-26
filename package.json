@@ -6,6 +6,7 @@
     "compile": "hardhat compile",
     "generate:poseidon2": "ts-node yul-generator-poseidon2.ts > contracts/Poseidon2Yul.sol",
     "generate:poseidon4": "ts-node yul-generator-poseidon4.ts > contracts/Poseidon4Yul.sol",
+    "generate:poseidon4-compact": "ts-node --esm yul-generator-poseidon4-compact.ts > contracts/Poseidon4YulCompactFull.sol",
     "generate:all": "npm run generate:poseidon2 && npm run generate:poseidon4"
   },
   "devDependencies": {

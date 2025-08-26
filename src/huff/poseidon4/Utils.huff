@@ -1,0 +1,203 @@
+#define constant PRIME = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+
+#define macro SETUP() = takes (0) returns (1) {
+   [PRIME] // [PRIME]
+}
+
+#define macro ABSORB_CALLDATA() = takes (1) returns (6) {
+   // takes: [PRIME]
+   // State layout: [state0=capacity, state1=input0, state2=input1, state3=input2, state4=input3]
+
+   // absorb input3 (fourth input) - offset 0x60 (4 + 3*32)
+   0x60 calldataload // [state4=input3, PRIME]
+
+   // absorb input2 (third input) - offset 0x40 (4 + 2*32)
+   0x40 calldataload // [state3=input2, state4, PRIME]
+
+   // absorb input1 (second input) - offset 0x20 (4 + 1*32)  
+   0x20 calldataload // [state2=input1, state3, state4, PRIME]
+
+   // absorb input0 (first input) - offset 0x00 (4 + 0*32)
+   0x00 calldataload // [state1=input0, state2, state3, state4, PRIME]
+
+   // absorb capacity element (always 0) at state0
+   0x0 // [state0=capacity, state1, state2, state3, state4, PRIME]
+}
+
+#define macro ABSORB_1_INPUT(input0) = takes (1) returns (6) {
+   // takes: [PRIME]
+
+   // generate initial value
+   0x1 0x40 shl // [iv, PRIME]
+
+   // absorb input4
+   0x0 // [input4, iv, PRIME]
+
+   // absorb input3
+   0x0 // [input3, input4, iv, PRIME]
+
+   // absorb input2
+   0x0 // [input2, input3, input4, iv, PRIME]
+
+   // absorb input1
+   0x0 // [input1, input2, input3, input4, iv, PRIME]
+
+   // absorb input0
+   <input0> // [input0, input1, input2, input3, input4, iv, PRIME]
+}
+
+// Clean stack management - each macro takes exactly 6 elements [state0, state1, state2, state3, state4, PRIME]
+// and returns exactly 6 elements in the same format
+
+#define macro ADD_CONSTANTS(c0, c1, c2, c3, c4) = takes (6) returns (6) {
+   // takes: [state0, state1, state2, state3, state4, PRIME]
+   // returns: [state0', state1', state2', state3', state4', PRIME]
+
+   // Add constant to state4
+   dup6 <c4> dup6 addmod // [state4', state0, state1, state2, state3, PRIME]
+   
+   // Add constant to state3  
+   swap1 dup6 <c3> dup6 addmod // [state3', state4', state1, state2, state3, PRIME]
+   
+   // Add constant to state2
+   swap2 dup6 <c2> dup6 addmod // [state2', state4', state3', state2, state3, PRIME]
+   
+   // Add constant to state1
+   swap3 dup6 <c1> dup6 addmod // [state1', state4', state3', state2', state3, PRIME]
+   
+   // Add constant to state0
+   swap4 dup6 <c0> dup6 addmod // [state0', state4', state3', state2', state1', PRIME]
+   
+   // Reorder stack: [state0', state1', state2', state3', state4', PRIME]
+   swap4 swap3 swap2 swap1
+}
+
+#define macro FULL_S_BOX() = takes (6) returns (6) {
+   // takes: [state0, state1, state2, state3, state4, PRIME]  
+   // returns: [state0^5, state1^5, state2^5, state3^5, state4^5, PRIME]
+   
+   // S-box state0: state0^5
+   dup1 dup1 dup7 mulmod // [state0^2, state0, state1, state2, state3, state4, PRIME]
+   dup1 dup1 dup8 mulmod // [state0^4, state0^2, state0, state1, state2, state3, state4, PRIME]  
+   dup3 dup8 mulmod      // [state0^5, state0^2, state0, state1, state2, state3, state4, PRIME]
+   swap2 pop pop         // [state0^5, state1, state2, state3, state4, PRIME]
+   
+   // S-box state1: state1^5
+   dup2 dup2 dup7 mulmod // [state1^2, state0^5, state1, state2, state3, state4, PRIME]
+   dup1 dup1 dup8 mulmod // [state1^4, state1^2, state0^5, state1, state2, state3, state4, PRIME]
+   dup4 dup8 mulmod      // [state1^5, state1^2, state0^5, state1, state2, state3, state4, PRIME]
+   swap3 pop pop         // [state1^5, state0^5, state2, state3, state4, PRIME]
+   swap1                 // [state0^5, state1^5, state2, state3, state4, PRIME]
+   
+   // S-box state2: state2^5
+   dup3 dup3 dup7 mulmod // [state2^2, state0^5, state1^5, state2, state3, state4, PRIME]
+   dup1 dup1 dup8 mulmod // [state2^4, state2^2, state0^5, state1^5, state2, state3, state4, PRIME]
+   dup5 dup8 mulmod      // [state2^5, state2^2, state0^5, state1^5, state2, state3, state4, PRIME]
+   swap4 pop pop         // [state2^5, state0^5, state1^5, state3, state4, PRIME]
+   swap2 swap1           // [state0^5, state1^5, state2^5, state3, state4, PRIME]
+   
+   // S-box state3: state3^5
+   dup4 dup4 dup7 mulmod // [state3^2, state0^5, state1^5, state2^5, state3, state4, PRIME]
+   dup1 dup1 dup8 mulmod // [state3^4, state3^2, state0^5, state1^5, state2^5, state3, state4, PRIME]
+   dup6 dup8 mulmod      // [state3^5, state3^2, state0^5, state1^5, state2^5, state3, state4, PRIME]
+   swap5 pop pop         // [state3^5, state0^5, state1^5, state2^5, state4, PRIME]
+   swap3 swap2 swap1     // [state0^5, state1^5, state2^5, state3^5, state4, PRIME]
+   
+   // S-box state4: state4^5
+   dup5 dup5 dup7 mulmod // [state4^2, state0^5, state1^5, state2^5, state3^5, state4, PRIME]
+   dup1 dup1 dup8 mulmod // [state4^4, state4^2, state0^5, state1^5, state2^5, state3^5, state4, PRIME]
+   dup7 dup8 mulmod      // [state4^5, state4^2, state0^5, state1^5, state2^5, state3^5, state4, PRIME]
+   swap6 pop pop         // [state4^5, state0^5, state1^5, state2^5, state3^5, PRIME]
+   swap4 swap3 swap2 swap1 // [state0^5, state1^5, state2^5, state3^5, state4^5, PRIME]
+}
+
+#define macro SINGLE_BOX() = takes (6) returns (6) {
+   // takes: [state0, state1, state2, state3, state4, PRIME]
+   // returns: [state0^5, state1, state2, state3, state4, PRIME]
+   
+   // S-box only state0: state0^5
+   dup1 dup1 dup7 mulmod // [state0^2, state0, state1, state2, state3, state4, PRIME]
+   dup1 dup1 dup8 mulmod // [state0^4, state0^2, state0, state1, state2, state3, state4, PRIME]  
+   dup3 dup8 mulmod      // [state0^5, state0^2, state0, state1, state2, state3, state4, PRIME]
+   swap2 pop pop         // [state0^5, state1, state2, state3, state4, PRIME]
+}
+
+#define macro MDS_MATRIX_MULTIPLICATION() = takes (6) returns (6) {
+   // takes: [state0, state1, state2, state3, state4, PRIME]
+   // returns: [new_state0, new_state1, new_state2, new_state3, new_state4, PRIME]
+   
+   // BLS12-381 5x5 MDS matrix multiplication
+   // Matrix:
+   // Row 0: [0x5edc4de4..., 0x21c0f632..., 0x4243ff5f..., 0x7344ba89..., 0x20c42fc1...]
+   // Row 1: [0x68186626..., 0x1cdfe1f1..., 0x1992e57f..., 0x5033856a..., 0x09e7c08b...]
+   // Row 2: [0x73ac6ff5..., 0x03ac6b5e..., 0x1574427d..., 0x21fcae8d..., 0x06ca0c88...]
+   // Row 3: [0x4ce4f069..., 0x1a0f8b3e..., 0x40a3f19f..., 0x051d14de..., 0x294ce128...]
+   // Row 4: [0x637e4ac1..., 0x35151e81..., 0x707fbbeb..., 0x5e876f84..., 0x121909e9...]
+   
+   // Compute new_state0 = m[0][0]*state0 + m[0][1]*state1 + m[0][2]*state2 + m[0][3]*state3 + m[0][4]*state4
+   dup1 0x5edc4de43ff07c60ace8f91ac726180f38604b5bb2f2ab2c27aa2a4d53cf7081 dup8 mulmod  // [m[0][0]*state0, ...]
+   dup3 0x21c0f632624d48a11931e2bcb8695897e5cb1d7cec432d115df1b25ea0d9d4a3 dup9 mulmod  // [m[0][1]*state1, m[0][0]*state0, ...]
+   dup9 addmod  // [sum01, ...]
+   dup4 0x4243ff5f4a234a2256286afa4ec59b4c9c32439c0869f1aa0b92a5ab82ee1b38 dup9 mulmod  // [m[0][2]*state2, sum01, ...]
+   dup9 addmod  // [sum012, ...]
+   dup5 0x7344ba891ca71591e07e7e6aa563931b9d07b548c816668af7f6170e5c8cd073 dup9 mulmod  // [m[0][3]*state3, sum012, ...]
+   dup9 addmod  // [sum0123, ...]
+   dup6 0x20c42fc15a32ed98b81609d1e9de98f255e4b46414af1dad036bfe255d3d2f19 dup9 mulmod  // [m[0][4]*state4, sum0123, ...]
+   dup9 addmod  // [new_state0, state0, state1, state2, state3, state4, PRIME]
+   
+   // Compute new_state1 = m[1][0]*state0 + m[1][1]*state1 + m[1][2]*state2 + m[1][3]*state3 + m[1][4]*state4
+   dup2 0x68186626fb0239ce09c22fe4ec756ab3dede54596e3cc426ac7ec1f5c38881f2 dup9 mulmod  // [m[1][0]*state0, new_state0, ...]
+   dup4 0x1cdfe1f1de4a7290ab39316b544da5e6576d4d1c05eaf0719c3c60867fab0372 dup10 mulmod  // [m[1][1]*state1, m[1][0]*state0, new_state0, ...]
+   dup10 addmod  // [sum10, new_state0, ...]
+   dup5 0x1992e57fe5537033e0b3711c4aba9a6630fdf87a5962a442e926718e92f7e573 dup10 mulmod  // [m[1][2]*state2, sum10, new_state0, ...]
+   dup10 addmod  // [sum110, new_state0, ...]
+   dup6 0x5033856a6fe61acbb5a95e6f8e1d6e5aca6e1d2125d0c03d864e8fecdb3ccd4a dup10 mulmod  // [m[1][3]*state3, sum110, new_state0, ...]
+   dup10 addmod  // [sum1110, new_state0, ...]
+   dup7 0x09e7c08b5c3289751cf3e30a7ab45c59aaca49585c3f08fb39a67bc9466cceb2 dup10 mulmod  // [m[1][4]*state4, sum1110, new_state0, ...]
+   dup10 addmod  // [new_state1, new_state0, state0, state1, state2, state3, state4, PRIME]
+   
+   // Compute new_state2 = m[2][0]*state0 + m[2][1]*state1 + m[2][2]*state2 + m[2][3]*state3 + m[2][4]*state4
+   dup3 0x73ac6ff5f192940a6a3198b94a158121172678891e35c8895c6a20f4164f7c93 dup10 mulmod  // [m[2][0]*state0, new_state1, new_state0, ...]
+   dup5 0x03ac6b5eccedc5da43ff372db13fa55ac197bb9592e15d4feb74ee152e90e952 dup11 mulmod  // [m[2][1]*state1, m[2][0]*state0, new_state1, new_state0, ...]
+   dup11 addmod  // [sum20, new_state1, new_state0, ...]
+   dup6 0x1574427d32abdcde8a24db9e42219c68f84d89f342f0eb455309c7937054f842 dup11 mulmod  // [m[2][2]*state2, sum20, new_state1, new_state0, ...]
+   dup11 addmod  // [sum220, new_state1, new_state0, ...]
+   dup7 0x21fcae8d9f8f62a956217b8fd134560fc2654527ee9e5359beefb95b2c59288d dup11 mulmod  // [m[2][3]*state3, sum220, new_state1, new_state0, ...]
+   dup11 addmod  // [sum2220, new_state1, new_state0, ...]
+   dup8 0x06ca0c88a61632956a1d3e91999c842f03b6e7f121df734ce75682fbfa1ef7f9 dup11 mulmod  // [m[2][4]*state4, sum2220, new_state1, new_state0, ...]
+   dup11 addmod  // [new_state2, new_state1, new_state0, state0, state1, state2, state3, state4, PRIME]
+   
+   // Compute new_state3 = m[3][0]*state0 + m[3][1]*state1 + m[3][2]*state2 + m[3][3]*state3 + m[3][4]*state4  
+   dup4 0x4ce4f0699adf8172f73b8cd2407d7db698a2625bf837b95a35abbf4eddcbd7dd dup11 mulmod  // [m[3][0]*state0, new_state2, new_state1, new_state0, ...]
+   dup6 0x1a0f8b3e444c78fcc67ce285e743094a787745b2761df2203979fc08d3ab3a99 dup12 mulmod  // [m[3][1]*state1, m[3][0]*state0, new_state2, new_state1, new_state0, ...]
+   dup12 addmod  // [sum30, new_state2, new_state1, new_state0, ...]
+   dup7 0x40a3f19fa4064fd9c119dd0acaea02ea3ae33a5df8b181867ff6b705f159e4af dup12 mulmod  // [m[3][2]*state2, sum30, new_state2, new_state1, new_state0, ...]
+   dup12 addmod  // [sum330, new_state2, new_state1, new_state0, ...]
+   dup8 0x051d14de8bbf745f9f8a20682c4104c48a0198e8f604ae06b45de4051d90065c dup12 mulmod  // [m[3][3]*state3, sum330, new_state2, new_state1, new_state0, ...]
+   dup12 addmod  // [sum3330, new_state2, new_state1, new_state0, ...]
+   dup9 0x294ce128d90968ca910a8cc18c9ab58d41a0a91df79bed878952aa88f7433a80 dup12 mulmod  // [m[3][4]*state4, sum3330, new_state2, new_state1, new_state0, ...]
+   dup12 addmod  // [new_state3, new_state2, new_state1, new_state0, state0, state1, state2, state3, state4, PRIME]
+   
+   // Compute new_state4 = m[4][0]*state0 + m[4][1]*state1 + m[4][2]*state2 + m[4][3]*state3 + m[4][4]*state4
+   dup5 0x637e4ac13df1eefbc7ee982d5a044b89a20d383b17fa5a23bfe25a7915d8885f dup12 mulmod  // [m[4][0]*state0, new_state3, new_state2, new_state1, new_state0, ...]
+   dup7 0x35151e81622f69dec5eedf76619630dc42997eeaf162fdda7644ce726da53c3b dup13 mulmod  // [m[4][1]*state1, m[4][0]*state0, new_state3, new_state2, new_state1, new_state0, ...]
+   dup13 addmod  // [sum40, new_state3, new_state2, new_state1, new_state0, ...]
+   dup8 0x707fbbeb0bf2b5aa6ed7573b46506eff64c69ce781aa7fa616e3d53390922a1e dup13 mulmod  // [m[4][2]*state2, sum40, new_state3, new_state2, new_state1, new_state0, ...]
+   dup13 addmod  // [sum440, new_state3, new_state2, new_state1, new_state0, ...]
+   dup9 0x5e876f8493c339c36750caa31382bea4a90d6928976a3f996a30a3f1af778f63 dup13 mulmod  // [m[4][3]*state3, sum440, new_state3, new_state2, new_state1, new_state0, ...]
+   dup13 addmod  // [sum4440, new_state3, new_state2, new_state1, new_state0, ...]
+   dup10 0x121909e9d5554a3b3d207272ad07359bb49136e23fe6f0d1c62c3bf940ca5bcd dup13 mulmod  // [m[4][4]*state4, sum4440, new_state3, new_state2, new_state1, new_state0, ...]
+   dup13 addmod  // [new_state4, new_state3, new_state2, new_state1, new_state0, state0, state1, state2, state3, state4, PRIME]
+   
+   // Clean up old state and reorder: [new_state0, new_state1, new_state2, new_state3, new_state4, PRIME]
+   swap10 pop swap9 pop swap8 pop swap7 pop swap6 pop // [new_state4, new_state3, new_state2, new_state1, new_state0, PRIME]
+   swap4 swap3 swap2 swap1   // [new_state0, new_state1, new_state2, new_state3, new_state4, PRIME]
+}
+
+#define macro RETURN_ONE() = takes (6) returns (0) {
+   // takes: [state0, state1, state2, state3, state4, PRIME]
+   // Return state0 (first element)
+   dup1     // [state0, state0, state1, state2, state3, state4, PRIME]
+   0x0 mstore  // [state0, state1, state2, state3, state4, PRIME]
+   0x20 0x0 return
+}

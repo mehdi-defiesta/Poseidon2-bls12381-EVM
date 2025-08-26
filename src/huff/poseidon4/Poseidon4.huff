@@ -1,0 +1,42 @@
+#include "./Permutation.huff"
+
+#define macro MAIN() = {
+    SETUP()
+    ABSORB_CALLDATA() // [state0, state1, state2, state3, state4, PRIME]
+
+    POSEIDON4_PERMUTATION() // [state0, state1, state2, state3, state4, PRIME]
+
+    // state0 is the result.
+    RETURN_ONE()
+}
+
+#define macro DEBUG_ABSORB() = {
+    SETUP()
+    ABSORB_CALLDATA() // [state0, state1, state2, state3, state4, PRIME]
+    
+    // Just return the first input to debug
+    dup1 // [state0, state0, state1, state2, state3, state4, PRIME]
+    0x0 mstore // [state0, state1, state2, state3, state4, PRIME]
+    0x20 0x0 return
+}
+
+#define macro SIMPLE_TEST() = {
+    // Just return a hardcoded value to test if the contract works at all
+    0x42 // [42]
+    0x0 mstore // []
+    0x20 0x0 return
+}
+
+#define test TEST_POSEIDON4_PERMUTATION_0() = {
+    SETUP()
+    ABSORB_1_INPUT(0x0)
+
+    POSEIDON4_PERMUTATION()
+
+    // TODO: Add expected output values for test
+    // These should be computed using the actual BLS12-381 constants
+    0x0 CUSTOM_ASSERT_EQ() // Placeholder for expected state0
+    0x0 CUSTOM_ASSERT_EQ() // Placeholder for expected state1  
+    0x0 CUSTOM_ASSERT_EQ() // Placeholder for expected state2
+    0x0 CUSTOM_ASSERT_EQ() // Placeholder for expected state3
+}
